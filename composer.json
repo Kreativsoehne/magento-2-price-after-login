@@ -22,7 +22,7 @@
     },
     "autoload": {
       "psr-4": {
-        "KuS\\PriceAfterLogin\\": ""
+        "kreativsoehne\\PriceAfterLogin\\": ""
       },
       "files": [
             "registration.php"
