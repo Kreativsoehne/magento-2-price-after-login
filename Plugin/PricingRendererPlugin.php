@@ -4,36 +4,40 @@
  * Kreativ&Söhne GmbH, Michael Fuchs <michael@kreativsoehne.de>
  *
  */
-namespace KuS\PriceAfterLogin\Plugin;
+namespace kreativsoehne\PriceAfterLogin\Plugin;
 
 class PricingRendererPlugin
 {
 
-    public $_session;
+    public $_customerSession;
+    public $_scopeConfig;
 
     public function __construct(
-        \Magento\Customer\Model\Session $session
+        \Magento\Customer\Model\Session $session,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
     )
     {
-        $this->_session = $session;
+        $this->_customerSession = $session;
+        $this->_scopeConfig = $scopeConfig;
     }
 
     /**
-     * Only return price when user is logged in and belongs to specific customer group
-     * Return false if no user is logged in.
+     * Only return price when user belongs to specific customer group.
      *
      * @return String
      */
     public function afterRender($subject, $result)
 	{
-        if ($this->_session->isLoggedIn()) {
-            $customerGroupId = $this->_session->getCustomer()->getGroupId();
+        // is the limitation active?
+        $limitActive = ($this->_scopeConfig->getValue('catalog/price/limit_active', \Magento\Store\Model\ScopeInterface::SCOPE_STORE) == 1) ? true : false;
+	    if(!$limitActive) return $result;
 
-            if ($customerGroupId <= 5 || $customerGroupId == 9)
-                return $result;
-            else
-                return false;
-        }
-        return false;
+        // get the user group ids which are accepted for paying with this payment method
+        $acceptedGroups = explode(",", $this->_scopeConfig->getValue('catalog/price/specificcustomergroup', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+
+        // get the current user's user group id
+        $customerGroupId = $this->_customerSession->getCustomer()->getGroupId();
+
+        return (in_array($customerGroupId, $acceptedGroups)) ? $result : false;
     }
 }
